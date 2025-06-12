@@ -1,0 +1,42 @@
+import re
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+
+HEADING_RE = re.compile(r'^[A-Z0-9\-\&\(\)\s]+$')
+
+def is_heading(line: str) -> bool:
+    """
+    Return True if line looks like a heading rather than a real sentence.
+    """
+    stripped = line.strip()
+    # 1) too short
+    if len(stripped.split()) < 5:
+        return True
+    # 2) all UPPER (and maybe digits/punctuation)
+    if HEADING_RE.match(stripped):
+        return True
+    # 3) contains zero verbs (so it never “does” anything)
+    doc = nlp(stripped)
+    if all(token.pos_ not in ("VERB", "AUX") for token in doc):
+        return True
+    return False
+
+def clean_headings(text: str) -> str:
+    cleaned = []
+    for line in text.splitlines():
+        if not is_heading(line) and line.strip():
+            cleaned.append(line)
+    return "\n".join(cleaned)
+
+# usage
+raw = """
+Supervision
+• Markets and Treasury Supervisory Guidance Note (link) was published …
+• COO is working on a supervisory procedure document…
+Digital Assets
+• Business is working with research team…
+Chat GPT 4.0
+…
+"""
+print(clean_headings(raw))
